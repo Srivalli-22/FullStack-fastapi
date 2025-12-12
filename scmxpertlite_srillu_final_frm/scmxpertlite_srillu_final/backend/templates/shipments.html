@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Shipments - Real-Time Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <style>
+    .shipments-container { padding: 20px; }
+    .shipment-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    .shipment-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+    .shipment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .shipment-number { font-size: 18px; font-weight: bold; color: #2c3e50; }
+    .shipment-status { 
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #27ae60;
+      color: white;
+    }
+    .shipment-details { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+    .detail-item { font-size: 14px; }
+    .detail-label { color: #7f8c8d; font-weight: bold; }
+    .detail-value { color: #2c3e50; margin-top: 5px; }
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .empty-state { text-align: center; padding: 40px; color: #7f8c8d; }
+    .refresh-btn {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .refresh-btn:hover { background: #2980b9; }
+  </style>
+</head>
+
+<body class="app-body">
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-logo-block">
+        <div class="sidebar-logo-icon">exf</div>
+        <div>
+          <div class="sidebar-logo-text-main">Exafluence</div>
+          <div class="sidebar-logo-text-sub">SCMXPertLite</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="/dashboard" class="sidebar-link">
+          <span class="icon">🏠</span> Dashboard
+        </a>
+
+        <a href="/account" class="sidebar-link">
+          <span class="icon">👤</span> My Account
+        </a>
+
+        <a href="/shipments" class="sidebar-link active">
+          <span class="icon">📦</span> My Shipments
+        </a>
+
+        <a href="/shipment" class="sidebar-link">
+          <span class="icon">➕</span> New Shipment
+        </a>
+
+        <a href="/devicestream" class="sidebar-link">
+          <span class="icon">📊</span> Device Data Stream
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-logout" onclick="logout()">Log out</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="app-main">
+      <div class="app-header">
+        <h1>📦 My Shipments (Real-Time Dashboard)</h1>
+        <p>All your shipments synced with MongoDB in real-time</p>
+      </div>
+
+      <div class="shipments-container">
+        <button class="refresh-btn" onclick="loadShipments()">🔄 Refresh Shipments</button>
+        
+        <div id="loading" class="loader" style="display:none;"></div>
+        <div id="shipmentsList"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Get auth token from localStorage or from cookie
+    function getAuthToken() {
+      let token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      if (!token) {
+        // Try to read from cookie (set by form login via /auth/login with HttpOnly flag)
+        const cookieToken = document.cookie.split('; ').find(row => row.startsWith('access_token='));
+        if (cookieToken) {
+          token = cookieToken.split('=')[1];
+        }
+      }
+      if (!token) {
+        console.warn('[shipments] No token found, redirecting to login');
+        window.location.href = '/login';
+      }
+      return token;
+    }
+
+    // Load shipments from API
+    async function loadShipments() {
+      const token = getAuthToken();
+      const listDiv = document.getElementById('shipmentsList');
+      const loader = document.getElementById('loading');
+      
+      loader.style.display = 'inline-block';
+      listDiv.innerHTML = '';
+      
+      try {
+        const response = await fetch('http://localhost:8000/api/shipments/', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+        
+        const shipments = await response.json();
+        console.log('[shipments] Loaded:', shipments);
+        
+        if (shipments.length === 0) {
+          listDiv.innerHTML = '<div class="empty-state"><p>📭 No shipments yet. <a href="/shipment">Create one now!</a></p></div>';
+        } else {
+          shipments.forEach(shipment => {
+            const card = `
+              <div class="shipment-card">
+                <div class="shipment-header">
+                  <div class="shipment-number">#${shipment.shipment_number}</div>
+                  <div class="shipment-status">${shipment.status || 'ACTIVE'}</div>
+                </div>
+                
+                <div class="shipment-details">
+                  <div class="detail-item">
+                    <div class="detail-label">Device ID</div>
+                    <div class="detail-value">${shipment.device_id || 'N/A'}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Goods Type</div>
+                    <div class="detail-value">${shipment.goods_type || 'N/A'}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Route</div>
+                    <div class="detail-value">${shipment.route || 'N/A'}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Expected Delivery</div>
+                    <div class="detail-value">${shipment.expected_delivery || 'N/A'}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Container Number</div>
+                    <div class="detail-value">${shipment.container_number || 'N/A'}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">PO Number</div>
+                    <div class="detail-value">${shipment.po_number || 'N/A'}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value">${shipment.description || 'N/A'}</div>
+                  </div>
+                  <div class="detail-item">
+                    <div class="detail-label">Created</div>
+                    <div class="detail-value">${new Date(shipment.created_at).toLocaleString()}</div>
+                  </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                  <button onclick="viewDeviceStream('${shipment.device_id}')" style="background: #2980b9; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">
+                    📊 View Device Stream
+                  </button>
+                </div>
+              </div>
+            `;
+            listDiv.innerHTML += card;
+          });
+        }
+      } catch (error) {
+        console.error('[shipments] Error loading:', error);
+        listDiv.innerHTML = `<div class="empty-state"><p>❌ Error loading shipments: ${error.message}</p></div>`;
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    // View device stream for a shipment
+    function viewDeviceStream(deviceId) {
+      if (!deviceId) {
+        alert('❌ No device ID associated with this shipment');
+        return;
+      }
+      window.location.href = `/devicestream?device_id=${deviceId}`;
+    }
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('displayName');
+      window.location.href = '/logout';
+    }
+
+    // Load shipments on page load
+    window.addEventListener('load', loadShipments);
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadShipments, 30000);
+  </script>
+</body>
+</html>
+
+      <div class="dev-title">My Shipments</div>
+
+      <section class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Shipment No</th>
+              <th>Container</th>
+              <th>Goods</th>
+              <th>Route</th>
+              <th>Device</th>
+              <th>Expected Delivery</th>
+            </tr>
+          </thead>
+
+          <tbody id="shipBody">
+            <!-- JS will load rows -->
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function logout() {
+      window.location.href = "/login";
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2000);
+    }
+
+    // 🚀 LOAD SHIPMENTS FROM BACKEND
+    async function loadShipments() {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      if (!token) {
+        showToast('Please login first');
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:8000/api/shipments/', {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const body = document.getElementById('shipBody');
+        body.innerHTML = '';
+
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(err.detail || 'Unable to load shipments');
+          return;
+        }
+
+        const items = await res.json();
+
+        if (!items || items.length === 0) {
+          body.innerHTML = `<tr><td colspan="6" style="text-align:center;">No Shipments Found</td></tr>`;
+          return;
+        }
+
+        items.forEach(sh => {
+          body.insertAdjacentHTML(
+            'beforeend',
+            `
+          <tr>
+            <td>${sh.shipment_number}</td>
+            <td>${sh.container_number || '-'}</td>
+            <td>${sh.goods_type || '-'}</td>
+            <td>${sh.route || '-'}</td>
+            <td>${sh.device_id || '-'}</td>
+            <td>${sh.expected_delivery || '-'}</td>
+          </tr>`
+          );
+        });
+      } catch (err) {
+        console.error('Load shipments error:', err);
+        showToast('Network error while loading shipments');
+      }
+    }
+
+    loadShipments();
+  </script>
+
+</body>
+</html>

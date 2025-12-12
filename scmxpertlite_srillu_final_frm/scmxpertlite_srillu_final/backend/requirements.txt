@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-jose
+passlib[bcrypt,argon2]
+pydantic
+kafka-python
+python-dotenv
+Jinja2
+python-multipart
+requests
+email-validator
+itsdangerous
+pymongo
+aiofiles

@@ -1,0 +1,116 @@
+{
+  "timestamp": "2025-12-03T08:46:20.302128",
+  "login": {
+    "status": "success"
+  },
+  "create_shipment": {
+    "status": "success",
+    "data": {
+      "shipment_number": "SHP-1764751580.252663",
+      "container_number": "CONT-12345",
+      "route": "Hyderabad \u2192 Mumbai",
+      "goods_type": "Vaccines",
+      "device_id": "DEV-001",
+      "expected_delivery": "25-12-2024",
+      "po_number": "PO-2024-001",
+      "delivery_number": "DEL-2024-001",
+      "ndc_number": "NDC-2024-001",
+      "batch_id": "BATCH-2024-001",
+      "serial_number": "SN-2024-001",
+      "description": "Test shipment with MongoDB storage",
+      "id": 5,
+      "owner_id": 3,
+      "created_at": "2025-12-03T08:46:20.269216"
+    }
+  },
+  "list_shipments": {
+    "count": 5,
+    "data": [
+      {
+        "shipment_number": "SM-101",
+        "container_number": "CONT-1",
+        "route": "Hyderabad -> Mumbai",
+        "goods_type": "Electronics",
+        "device_id": "DEV-01",
+        "expected_delivery": "2025-12-31",
+        "po_number": "PO-1",
+        "delivery_number": null,
+        "ndc_number": null,
+        "batch_id": null,
+        "serial_number": null,
+        "description": null,
+        "id": 1,
+        "owner_id": 3,
+        "created_at": "2025-12-03T07:13:16.167525"
+      },
+      {
+        "shipment_number": "SM-102",
+        "container_number": "CONT-2",
+        "route": "Hyderabad -> Mumbai",
+        "goods_type": "Electronics",
+        "device_id": "DEV-02",
+        "expected_delivery": "2025-12-31",
+        "po_number": "PO-2",
+        "delivery_number": null,
+        "ndc_number": null,
+        "batch_id": null,
+        "serial_number": null,
+        "description": null,
+        "id": 2,
+        "owner_id": 3,
+        "created_at": "2025-12-03T07:13:16.167528"
+      },
+      {
+        "shipment_number": "SM-103",
+        "container_number": "CONT-3",
+        "route": "Hyderabad -> Mumbai",
+        "goods_type": "Electronics",
+        "device_id": "DEV-03",
+        "expected_delivery": "2025-12-31",
+        "po_number": "PO-3",
+        "delivery_number": null,
+        "ndc_number": null,
+        "batch_id": null,
+        "serial_number": null,
+        "description": null,
+        "id": 3,
+        "owner_id": 3,
+        "created_at": "2025-12-03T07:13:16.167529"
+      },
+      {
+        "shipment_number": "34764384",
+        "container_number": "1",
+        "route": "Hyderabad \u2192 Mumbai",
+        "goods_type": "Vaccines",
+        "device_id": "DEV-001",
+        "expected_delivery": "05-01-26",
+        "po_number": "1022122",
+        "delivery_number": "7483487436",
+        "ndc_number": "578",
+        "batch_id": "187334",
+        "serial_number": "3",
+        "description": "food",
+        "id": 4,
+        "owner_id": 3,
+        "created_at": "2025-12-03T07:15:19.305734"
+      },
+      {
+        "shipment_number": "SHP-1764751580.252663",
+        "container_number": "CONT-12345",
+        "route": "Hyderabad \u2192 Mumbai",
+        "goods_type": "Vaccines",
+        "device_id": "DEV-001",
+        "expected_delivery": "25-12-2024",
+        "po_number": "PO-2024-001",
+        "delivery_number": "DEL-2024-001",
+        "ndc_number": "NDC-2024-001",
+        "batch_id": "BATCH-2024-001",
+        "serial_number": "SN-2024-001",
+        "description": "Test shipment with MongoDB storage",
+        "id": 5,
+        "owner_id": 3,
+        "created_at": "2025-12-03T08:46:20.269216"
+      }
+    ]
+  }
+}

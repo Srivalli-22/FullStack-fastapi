@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Account - SCMXPertLite</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <style>
+    .account-container { padding: 40px 20px; }
+    .account-card {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .account-header { 
+      text-align: center;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 20px;
+    }
+    .account-header h2 { 
+      color: #2c3e50;
+      font-size: 28px;
+      margin: 0 0 10px 0;
+    }
+    .account-header p {
+      color: #7f8c8d;
+      margin: 0;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #7f8c8d;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .detail-value {
+      font-size: 18px;
+      color: #2c3e50;
+      font-weight: 500;
+      text-align: right;
+      max-width: 60%;
+      word-break: break-all;
+    }
+    .loader {
+      text-align: center;
+      padding: 40px;
+      color: #7f8c8d;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .error-message {
+      background: #fadbd8;
+      color: #c0392b;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .account-actions {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #ecf0f1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .action-btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      text-align: center;
+      display: block;
+    }
+    .action-btn-primary {
+      background: #3498db;
+      color: white;
+    }
+    .action-btn-primary:hover {
+      background: #2980b9;
+      box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+    }
+    .action-btn-secondary {
+      background: #ecf0f1;
+      color: #2c3e50;
+      border: 1px solid #bdc3c7;
+    }
+    .action-btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+
+<body class="app-body">
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-logo-block">
+        <div class="sidebar-logo-icon">exf</div>
+        <div>
+          <div class="sidebar-logo-text-main">Exafluence</div>
+          <div class="sidebar-logo-text-sub">SCMXPertLite</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="/dashboard" class="sidebar-link">
+          <span class="icon">🏠</span> Dashboard
+        </a>
+
+        <a href="/account" class="sidebar-link active">
+          <span class="icon">👤</span> My Account
+        </a>
+
+        <a href="/shipments" class="sidebar-link">
+          <span class="icon">📦</span> My Shipments
+        </a>
+
+        <a href="/shipment" class="sidebar-link">
+          <span class="icon">➕</span> New Shipment
+        </a>
+
+        <a href="/devicestream" class="sidebar-link">
+          <span class="icon">📊</span> Device Data Stream
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-logout" onclick="logout()">Log out</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="app-main">
+      <div class="app-header">
+        <h1>👤 My Account</h1>
+        <p>View and manage your account information</p>
+      </div>
+
+      <div class="account-container">
+        <div class="account-card">
+          <div class="account-header">
+            <h2>Account Details</h2>
+            <p>Your profile information</p>
+          </div>
+
+          <div id="errorMsg" class="error-message" style="display:none;"></div>
+
+          <div id="loadingDiv" class="loader">
+            <div class="spinner"></div>
+            <p>Loading your profile...</p>
+          </div>
+
+          <div id="accountDetails" style="display:none;">
+            <div class="detail-row">
+              <span class="detail-label">Full Name</span>
+              <span class="detail-value" id="fullName">-</span>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">Email Address</span>
+              <span class="detail-value" id="emailValue">-</span>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">User ID</span>
+              <span class="detail-value" id="userIdValue">-</span>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">Account Status</span>
+              <span class="detail-value"><span style="background: #d5f4e6; color: #27ae60; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;">Active</span></span>
+            </div>
+
+            <div class="account-actions">
+              <a href="/dashboard" class="action-btn action-btn-primary">← Back to Dashboard</a>
+              <button onclick="logout()" class="action-btn action-btn-secondary">🚪 Logout</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function getAuthToken() {
+      let token = localStorage.getItem('access_token') || localStorage.getItem('token');
+      if (!token) {
+        const cookieToken = document.cookie.split('; ').find(row => row.startsWith('access_token='));
+        if (cookieToken) {
+          token = cookieToken.split('=')[1];
+        }
+      }
+      if (!token) {
+        window.location.href = '/login';
+      }
+      return token;
+    }
+
+    function showError(msg) {
+      const errorDiv = document.getElementById('errorMsg');
+      errorDiv.textContent = msg;
+      errorDiv.style.display = 'block';
+      document.getElementById('loadingDiv').style.display = 'none';
+      document.getElementById('accountDetails').style.display = 'none';
+    }
+
+    function displayUserDetails(user) {
+      document.getElementById('fullName').textContent = user.full_name || user['full_name'] || 'N/A';
+      document.getElementById('emailValue').textContent = user.email || user['email'] || 'N/A';
+      document.getElementById('userIdValue').textContent = user.id || user['id'] || 'N/A';
+      document.getElementById('loadingDiv').style.display = 'none';
+      document.getElementById('accountDetails').style.display = 'block';
+    }
+
+    function logout() {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('displayName');
+      window.location.href = '/login';
+    }
+
+    // Load user details on page load
+    window.addEventListener('load', async () => {
+      const token = getAuthToken();
+      
+      try {
+        // Fetch protected endpoint to verify auth and get user info
+        // The /auth/me endpoint would be ideal, but we'll use shipments as fallback
+        const res = await fetch('http://localhost:8000/api/shipments/', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            showError('❌ Your session has expired. Please login again.');
+            setTimeout(() => window.location.href = '/login', 2000);
+          } else {
+            showError('❌ Failed to load account details.');
+          }
+          return;
+        }
+
+        // Extract user info from token payload
+        // For now, display from localStorage or decode token
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        
+        // Fetch user details from a hypothetical /auth/me endpoint
+        // For now, use localStorage display name
+        const displayName = localStorage.getItem('displayName') || 'User';
+        const email = tokenPayload.sub || localStorage.getItem('userEmail') || 'user@example.com';
+        
+        displayUserDetails({
+          full_name: displayName,
+          email: email,
+          id: tokenPayload.id || 'N/A'
+        });
+
+      } catch (error) {
+        console.error('Error loading account:', error);
+        showError('❌ Error loading account details. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>

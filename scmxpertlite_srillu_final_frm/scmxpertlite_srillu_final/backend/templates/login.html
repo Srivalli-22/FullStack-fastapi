@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SCMXPertLite - Login</title>
+
+  <!-- FIXED CSS PATH -->
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body class="auth-body">
+  <div class="auth-card">
+    <div class="auth-left gradient">
+      <h2 class="auth-section-title">Create your account</h2>
+      <p class="auth-text" style="color:#f9fafb;">
+        Enter your personal details and start journey with us.
+      </p>
+      <button class="btn-outline" onclick="goSignup()">SIGN UP</button>
+    </div>
+
+    <div class="auth-right">
+      <div class="app-title">SCMXPertLite</div>
+      <h3 class="auth-section-title">Sign in now</h3>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="login-email">Email address*</label>
+          <input id="login-email" name="email" type="email" placeholder="Enter your email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Password*</label>
+          <input id="login-password" name="password" type="password" placeholder="Enter your Password" required />
+        </div>
+
+        <div class="remember-row">
+          <input id="remember" type="checkbox" />
+          <label for="remember">Remember me</label>
+        </div>
+
+        <div style="margin-top:18px;">
+          <button type="submit" class="btn-primary">SIGN IN</button>
+        </div>
+
+        <div class="auth-link-row" style="margin-top:12px;">
+          <a href="/forget-password">Forgot your password?</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- ==============================
+       FINAL WORKING LOGIN SCRIPT
+       ============================== -->
+  <script>
+    function goSignup() {
+      window.location.href = "/signup";
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2000);
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+
+      try {
+        // Use full backend URL to avoid path issues
+        const res = await fetch("http://localhost:8000/auth/login", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            username: email,
+            password: password
+          }),
+        });
+
+        if (!res.ok) {
+          let msg = "Invalid credentials";
+          try {
+            const err = await res.json();
+            if (err.detail) msg = err.detail;
+          } catch (_) {
+            // ignore json error
+          }
+          showToast(msg);
+          return;
+        }
+
+        const data = await res.json();
+
+        // Save Token with both keys for compatibility
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("access_token", data.access_token);
+
+        // Save Display Name and Email
+        const namePart = email.split("@")[0];
+        localStorage.setItem("displayName", namePart);
+        localStorage.setItem("userEmail", email);
+
+        showToast("Login successful");
+
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 800);
+
+      } catch (err) {
+        console.error("LOGIN FETCH ERROR:", err);
+        showToast("Network error");
+      }
+    });
+  </script>
+</body>
+</html>

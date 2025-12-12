@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SCMXPertLite - Signup</title>
+
+  <!-- FIXED CSS PATH -->
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body class="auth-body">
+  <div class="auth-card">
+
+    <div class="auth-left">
+      <div class="app-title">SCMXPertLite</div>
+      <h3 class="auth-section-title">Create Account</h3>
+
+      <form onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label for="su-name">What should we call you?*</label>
+          <input id="su-name" type="text" placeholder="Enter your full name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="su-email">Email address*</label>
+          <input id="su-email" type="email" placeholder="Enter your email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="su-pass">Create a New password*</label>
+          <input id="su-pass" type="password" placeholder="Enter New password" required />
+        </div>
+
+        <div class="form-group">
+          <label for="su-confirm">Confirm New password*</label>
+          <input id="su-confirm" type="password" placeholder="Confirm New password" required />
+        </div>
+
+        <div class="auth-footer-text">
+          I have read and accept the Privacy Policy &amp; Conditions of use
+        </div>
+
+        <div style="margin-top:14px;">
+          <button type="submit" class="btn-primary">SIGN UP</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="auth-right gradient">
+      <h3 class="auth-section-title">Welcome back!</h3>
+      <p class="auth-text" style="color:#f9fafb;">
+        Welcome back! Please login with your personal info.
+      </p>
+      <button class="btn-outline" onclick="goLogin()">SIGN IN</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function goLogin() {
+      window.location.href = "/login";
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2000);
+    }
+
+    function handleSignup(e) {
+      e.preventDefault();
+
+      const name = document.getElementById("su-name").value.trim();
+      const email = document.getElementById("su-email").value.trim();
+      const pass = document.getElementById("su-pass").value;
+      const cpass = document.getElementById("su-confirm").value;
+
+      if (pass !== cpass) {
+        showToast("Passwords do not match.");
+        return;
+      }
+
+      if (pass.length < 6) {
+        showToast("Password must be at least 6 characters.");
+        return;
+      }
+
+      // Call the signup API
+      fetch("http://localhost:8000/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: name,
+          email: email,
+          password: pass
+        }),
+      })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(err => {
+            showToast(err.detail || "Signup failed");
+            throw new Error("Signup failed");
+          });
+        }
+        return res.json();
+      })
+      .then(data => {
+        localStorage.setItem("displayName", data.full_name || name || "User");
+        showToast("Account created successfully! Please login.");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1000);
+      })
+      .catch(err => {
+        console.error("Signup error:", err);
+        showToast("Network error or signup failed");
+      });
+    }
+  </script>
+</body>
+</html>

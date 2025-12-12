@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SCMXPertLite - Dashboard</title>
+
+  <!-- FIXED CSS PATH -->
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body class="app-body">
+  <div class="app-shell">
+
+    <aside class="app-sidebar">
+      <div class="sidebar-logo-block">
+        <div>
+          <div class="sidebar-logo-text-sub">SCMXPertLite</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="/dashboard" class="sidebar-link active">
+          <span class="icon">🏠</span> Dashboard
+        </a>
+        <a href="/account" class="sidebar-link">
+          <span class="icon">👤</span> My Account
+        </a>
+        <a href="/shipments" class="sidebar-link">
+          <span class="icon">📦</span> My Shipment
+        </a>
+        <a href="/shipment" class="sidebar-link">
+          <span class="icon">➕</span> New Shipment
+        </a>
+        <a href="/devicestream" class="sidebar-link">
+          <span class="icon">📊</span> Device Data
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-logout" onclick="logout()">Log out</button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="dash-header">
+        <h1>Hi <span id="userName">User</span>, Welcome to SCMXPertLite</h1>
+      </div>
+
+      <section class="dash-hero">
+        <div class="dash-panel dash-left">
+          <h2>Create a New Shipment</h2>
+          <p class="auth-text">
+            Set up a new shipment, assign devices and define routes for real-time monitoring.
+          </p>
+          <button onclick="goShipment()">CREATE SHIPMENT</button>
+        </div>
+
+        <div class="dash-panel dash-right">
+          <h2>To see Device Data Stream.</h2>
+          <p class="auth-text">
+            View live data from devices such as temperature and route information.
+          </p>
+          <button onclick="goDevice()">DEVICE DATA STREAM</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('displayName');
+      window.location.href = "/login";
+    }
+    function goShipment() {
+      window.location.href = "/shipment";
+    }
+    function goDevice() {
+      window.location.href = "/devicestream";
+    }
+
+    const nm = localStorage.getItem("displayName") || "User";
+    document.getElementById("userName").textContent = nm;
+  </script>
+</body>
+</html>

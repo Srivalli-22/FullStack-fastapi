@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Device Data Stream - Real-Time</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <style>
+    .stream-container { padding: 20px; }
+    .stream-controls { 
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .control-row { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+    .control-row input, .control-row button {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .control-row input { flex: 1; max-width: 300px; }
+    .control-row button {
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .control-row button:hover { background: #2980b9; }
+    .control-row button.stop {
+      background: #e74c3c;
+    }
+    .control-row button.stop:hover { background: #c0392b; }
+    
+    .stream-status {
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .stream-status.active { background: #d5f4e6; color: #27ae60; }
+    .stream-status.inactive { background: #fadbd8; color: #e74c3c; }
+    
+    .stream-table {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .stream-table table { width: 100%; border-collapse: collapse; }
+    .stream-table th {
+      background: #34495e;
+      color: white;
+      padding: 15px;
+      text-align: left;
+    }
+    .stream-table td {
+      padding: 15px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    .stream-table tr:hover { background: #f8f9fa; }
+    
+    .data-row {
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .highlight { background: #fff3cd; }
+    .empty-state { text-align: center; padding: 40px; color: #7f8c8d; }
+  </style>
+</head>
+
+<body class="app-body">
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-logo-block">
+        <div class="sidebar-logo-icon">exf</div>
+        <div>
+          <div class="sidebar-logo-text-main">Exafluence</div>
+          <div class="sidebar-logo-text-sub">SCMXPertLite</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="/dashboard" class="sidebar-link">
+          <span class="icon">🏠</span> Dashboard
+        </a>
+        <a href="/account" class="sidebar-link">
+          <span class="icon">👤</span> My Account
+        </a>
+        <a href="/shipments" class="sidebar-link">
+          <span class="icon">📦</span> My Shipments
+        </a>
+        <a href="/shipment" class="sidebar-link">
+          <span class="icon">➕</span> New Shipment
+        </a>
+        <a href="/devicestream" class="sidebar-link active">
+          <span class="icon">📊</span> Device Data Stream
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-logout" onclick="logout()">Log out</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="app-main">
+      <div class="app-header">
+        <h1>📊 Real-Time Device Data Stream</h1>
+        <p>Monitor your shipment devices in real-time with live sensor data</p>
+      </div>
+
+      <div class="stream-container">
+        
+        <!-- Stream Controls -->
+        <div class="stream-controls">
+          <div class="control-row">
+            <input 
+              type="text" 
+              id="deviceId" 
+              placeholder="Enter Device ID (e.g., 4587434500)"
+              value=""
+            />
+            <button onclick="startStream()">🚀 Start Stream</button>
+            <button class="stop" onclick="stopStream()" id="stopBtn" style="display:none;">⏹️ Stop Stream</button>
+          </div>
+          
+          <div id="status" class="stream-status inactive">🔴 Stream Inactive</div>
+          
+          <div class="control-row">
+            <label>
+              <input type="checkbox" id="autoScroll" checked /> Auto-scroll to new events
+            </label>
+            <button onclick="clearData()">🗑️ Clear Data</button>
+            <button onclick="exportData()">📥 Export Data</button>
+          </div>
+        </div>
+
+        <!-- Stream Data Table -->
+        <div class="stream-table">
+          <table>
+            <thead>
+              <tr>
+                <th>⏱️ Timestamp</th>
+                <th>🔋 Battery (%)</th>
+                <th>🌡️ Temperature (°C)</th>
+                <th>💧 Humidity (%)</th>
+                <th>📍 GPS Lat/Long</th>
+                <th>⚡ Speed (km/h)</th>
+                <th>🚗 Status</th>
+                <th>📍 Route From → To</th>
+              </tr>
+            </thead>
+            <tbody id="dataBody">
+              <tr class="empty-state">
+                <td colspan="8">👈 Select a Device ID and click "Start Stream" to begin monitoring</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 20px; color: #7f8c8d; font-size: 12px;">
+          <p>💡 Tip: Device data is streamed in real-time from Kafka to MongoDB and displayed here instantly!</p>
+          <p>Last updated: <span id="lastUpdate">Never</span></p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let streamActive = false;
+    let maxRows = 100;
+    let dataCount = 0;
+    let pollInterval = null;
+
+    // Get auth token from localStorage or cookies
+    function getAuthToken() {
+      let token = localStorage.getItem('access_token');
+      if (!token) {
+        token = localStorage.getItem('token');
+      }
+      if (!token) {
+        // Try to read from cookie
+        const cookieToken = document.cookie.split('; ').find(row => row.startsWith('access_token='));
+        if (cookieToken) {
+          token = cookieToken.split('=')[1];
+        }
+      }
+      if (!token) {
+        alert('❌ Not authenticated. Redirecting to login...');
+        window.location.href = '/login';
+      }
+      return token;
+    }
+
+    // Start real-time stream using polling
+    function startStream() {
+      const deviceId = document.getElementById('deviceId').value.trim();
+      
+      if (!deviceId) {
+        alert('❌ Please enter a Device ID');
+        return;
+      }
+
+      const token = getAuthToken();
+      
+      // Stop any existing stream
+      if (streamActive) {
+        stopStream();
+      }
+
+      console.log(`[stream] Starting stream for device: ${deviceId}`);
+      
+      // Clear table
+      clearData();
+      
+      // Update UI
+      document.getElementById('status').className = 'stream-status active';
+      document.getElementById('status').innerHTML = `🟢 Streaming from Device: <strong>${deviceId}</strong>`;
+      document.getElementById('stopBtn').style.display = 'inline-block';
+      
+      streamActive = true;
+      dataCount = 0;
+      
+      // Poll for new data every 2 seconds
+      pollInterval = setInterval(() => {
+        if (!streamActive) return;
+        
+        fetchStreamData(deviceId, token);
+      }, 2000);
+      
+      // Initial fetch
+      fetchStreamData(deviceId, token);
+    }
+
+    // Fetch streaming data
+    async function fetchStreamData(deviceId, token) {
+      try {
+        const res = await fetch(`http://localhost:8000/api/device/generate/${deviceId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!res.ok) {
+          console.error('[stream] Fetch error:', res.status);
+          if (res.status === 401) {
+            stopStream();
+            alert('❌ Authentication failed. Please login again.');
+            window.location.href = '/login';
+          }
+          return;
+        }
+        
+        const response = await res.json();
+        if (response.data) {
+          addDataRow(response.data);
+          dataCount++;
+          document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+      } catch (error) {
+        console.error('[stream] Error fetching stream data:', error);
+        // Don't stop on error, keep retrying
+      }
+    }
+
+    // Stop stream
+    function stopStream() {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+      
+      streamActive = false;
+      
+      document.getElementById('status').className = 'stream-status inactive';
+      document.getElementById('status').innerHTML = '🔴 Stream Stopped';
+      document.getElementById('stopBtn').style.display = 'none';
+      
+      console.log(`[stream] Stream stopped. Total events: ${dataCount}`);
+    }
+
+    // Add data row to table
+    function addDataRow(data) {
+      const tbody = document.getElementById('dataBody');
+      
+      // Remove "empty state" message
+      if (tbody.querySelector('.empty-state')) {
+        tbody.innerHTML = '';
+      }
+      
+      const timestamp = new Date(data.timestamp).toLocaleTimeString();
+      const row = document.createElement('tr');
+      row.className = 'data-row';
+      row.innerHTML = `
+        <td>${timestamp}</td>
+        <td><strong style="color: ${data.battery < 30 ? '#e74c3c' : '#27ae60'};">${data.battery.toFixed(1)}%</strong></td>
+        <td>${data.temperature.toFixed(1)}°C</td>
+        <td>${data.humidity.toFixed(1)}%</td>
+        <td>${data.latitude.toFixed(4)} / ${data.longitude.toFixed(4)}</td>
+        <td>${data.speed.toFixed(1)}</td>
+        <td><span style="padding: 5px 10px; border-radius: 3px; background: #3498db; color: white; font-size: 12px;">${data.status.toUpperCase()}</span></td>
+        <td>${data.route_from} → ${data.route_to}</td>
+      `;
+      
+      tbody.insertBefore(row, tbody.firstChild);
+      
+      // Keep only last 100 rows
+      while (tbody.children.length > maxRows) {
+        tbody.removeChild(tbody.lastChild);
+      }
+      
+      // Auto-scroll
+      if (document.getElementById('autoScroll').checked) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Clear data
+    function clearData() {
+      const tbody = document.getElementById('dataBody');
+      tbody.innerHTML = '<tr class="empty-state"><td colspan="8">👈 Start streaming to see device data</td></tr>';
+      dataCount = 0;
+    }
+
+    // Export data to CSV
+    function exportData() {
+      const rows = [];
+      const table = document.querySelectorAll('#dataBody tr');
+      
+      if (table.length === 0) {
+        alert('No data to export');
+        return;
+      }
+      
+      // Header
+      rows.push('Timestamp,Battery,Temperature,Humidity,Latitude,Longitude,Speed,Status,Route');
+      
+      // Data
+      table.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 0) {
+          const data = Array.from(cells).map(cell => `"${cell.textContent.trim()}"`).join(',');
+          rows.push(data);
+        }
+      });
+      
+      // Download
+      const csv = rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `device-stream-${new Date().getTime()}.csv`;
+      a.click();
+    }
+
+    // Logout
+    function logout() {
+      stopStream();
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+      window.location.href = '/logout';
+    }
+
+    // Check auth on load
+    window.addEventListener('load', () => {
+      const token = getAuthToken();
+      console.log('[stream] Page loaded, auth token available:', !!token);
+    });
+  </script>
+</body>
+</html>
+
+</html>

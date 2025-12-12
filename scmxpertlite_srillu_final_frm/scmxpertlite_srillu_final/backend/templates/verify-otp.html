@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verify OTP - SCMXPertLite</title>
+
+  <!-- FIXED CSS PATH -->
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body class="auth-body">
+  <div class="auth-card">
+
+    <!-- LEFT PANEL: OTP Form -->
+    <div class="auth-left">
+      <div class="app-title">SCMXPertLite</div>
+      <h3 class="auth-section-title">Verify OTP</h3>
+
+      <p class="auth-text">
+        Enter the 6-digit OTP sent to your registered email address.
+      </p>
+
+      <form onsubmit="handleVerify(event)">
+        <div class="form-group">
+          <label for="otp">Enter OTP*</label>
+          <input id="otp" type="text" placeholder="Enter 6-digit OTP" maxlength="6" required />
+        </div>
+
+        <button type="submit" class="btn-primary">VERIFY OTP</button>
+
+        <div class="auth-link-row" style="margin-top:12px;">
+          <a href="/forget-password">Didn't receive OTP? Resend</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="auth-right gradient">
+      <h3 class="auth-section-title">Secure your account</h3>
+      <p class="auth-text" style="color:#f9fafb;">
+        Please verify your identity before resetting your password.
+      </p>
+      <button class="btn-outline" onclick="goLogin()">SIGN IN</button>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function goLogin() {
+      window.location.href = "/login";
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2000);
+    }
+
+    function handleVerify(e) {
+      e.preventDefault();
+      const otp = document.getElementById("otp").value.trim();
+
+      if (otp.length !== 6) {
+        showToast("Invalid OTP format.");
+        return;
+      }
+
+      // DEMO ONLY — replace with backend verification
+      showToast("OTP Verified (demo)");
+      setTimeout(() => {
+        window.location.href = "/reset-password";
+      }, 800);
+    }
+  </script>
+
+</body>
+</html>

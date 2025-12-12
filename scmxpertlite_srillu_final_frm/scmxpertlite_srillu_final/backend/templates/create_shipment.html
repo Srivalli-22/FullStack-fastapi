@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create New Shipment</title>
+
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body class="app-body">
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-logo-block">
+        <div class="sidebar-logo-icon">exf</div>
+        <div>
+          <div class="sidebar-logo-text-main">Exafluence</div>
+          <div class="sidebar-logo-text-sub">SCMXPertLite</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="/dashboard" class="sidebar-link">
+          <span class="icon">🏠</span> Dashboard
+        </a>
+        <a href="/account" class="sidebar-link">
+          <span class="icon">👤</span> My Account
+        </a>
+        <a href="/shipments" class="sidebar-link">
+          <span class="icon">📦</span> My Shipment
+        </a>
+        <a href="/shipment" class="sidebar-link active">
+          <span class="icon">➕</span> New Shipment
+        </a>
+        <a href="/devicestream" class="sidebar-link">
+          <span class="icon">📊</span> Device Data
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-logout" onclick="logout()">Log out</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="app-main">
+      <div class="ship-page-header">
+        <h2>Create New Shipment</h2>
+        <p>Please fill the all details.</p>
+      </div>
+
+      <section class="ship-bg-band">
+        <div class="ship-card">
+          <div class="ship-card-topnote">Please fill the all details.</div>
+
+          <form id="shipForm">
+            <div class="ship-grid">
+
+              <div class="form-group">
+                <label>Shipment Number*</label>
+                <input name="shipment_number" type="text" placeholder="Shipment Number" required />
+              </div>
+
+              <div class="form-group">
+                <label>Container Number*</label>
+                <input name="container_number" type="text" placeholder="Container Number" required />
+              </div>
+
+              <div class="form-group">
+                <label>Route Details*</label>
+                <select name="route" required>
+                  <option value="">Select Route</option>
+                  <option>Hyderabad → Mumbai</option>
+                  <option>Chennai → Bangalore</option>
+                  <option>Pune → Delhi</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Goods Type*</label>
+                <select name="goods_type" required>
+                  <option value="">Select Goods</option>
+                  <option>Vaccines</option>
+                  <option>Food & Beverages</option>
+                  <option>Electronics</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Device*</label>
+                <select name="device_id" required>
+                  <option value="">Select Device</option>
+                  <option>DEV-001</option>
+                  <option>DEV-014</option>
+                  <option>DEV-023</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Expected Delivery Date*</label>
+                <input name="expected_delivery" type="text" placeholder="20-01-2000" required />
+              </div>
+
+              <div class="form-group">
+                <label>PO Number*</label>
+                <input name="po_number" type="text" placeholder="PO Number" required />
+              </div>
+
+              <div class="form-group">
+                <label>Delivery Number*</label>
+                <input name="delivery_number" type="text" placeholder="Delivery Number" required />
+              </div>
+
+              <div class="form-group">
+                <label>NDC Number*</label>
+                <input name="ndc_number" type="text" placeholder="NDC Number" required />
+              </div>
+
+              <div class="form-group">
+                <label>Batch Id*</label>
+                <input name="batch_id" type="text" placeholder="Batch Id" required />
+              </div>
+
+              <div class="form-group">
+                <label>Serial number of Goods*</label>
+                <input name="serial_number" type="text" placeholder="Serial number of Goods" required />
+              </div>
+
+              <div class="form-group">
+                <label>Shipment Description*</label>
+                <textarea name="description" rows="2" placeholder="Shipment Description" required></textarea>
+              </div>
+
+            </div>
+
+            <div class="ship-bottom-buttons">
+              <button type="submit" class="btn-blue-wide">CREATE SHIPMENT</button>
+              <button type="reset" class="btn-red-wide">CLEAR DETAILS</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('token');
+      localStorage.removeItem('displayName');
+      window.location.href = "/login";
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2000);
+    }
+
+    // 🚀 REAL BACKEND POST REQUEST
+    document.getElementById("shipForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form.entries());
+
+      let token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      if (!token) {
+        // Try to read from cookie (set by form login via /auth/login with HttpOnly flag)
+        const cookieToken = document.cookie.split('; ').find(row => row.startsWith('access_token='));
+        if (cookieToken) {
+          token = cookieToken.split('=')[1];
+        }
+      }
+      if (!token) {
+        showToast("Please login first");
+        window.location.href = "/login";
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:8000/api/shipments/", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+          showToast("Shipment created successfully!");
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 800);
+        } else {
+          const err = await res.json();
+          showToast(err.detail || "Error creating shipment");
+        }
+      } catch (err) {
+        console.error("Submit error:", err);
+        showToast("Network error creating shipment");
+      }
+    });
+  </script>
+</body>
+</html>
